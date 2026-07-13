@@ -10,7 +10,9 @@ class SyncService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   StreamSubscription? _connectivitySub;
+  StreamSubscription<QuerySnapshot>? _firestoreSub;
   bool _isSyncing = false;
+  final _remoteReportsController = StreamController<List<Report>>.broadcast();
   void Function()? onSyncChanged;
 
   SyncService._();
@@ -20,16 +22,38 @@ class SyncService {
     return _instance!;
   }
 
+  Stream<List<Report>> get remoteReportsStream => _remoteReportsController.stream;
+
   Future<void> init() async {
     _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
       if (results.any((r) => r != ConnectivityResult.none)) {
         syncAll();
       }
     });
+    _listenToRemoteChanges();
   }
 
   void dispose() {
     _connectivitySub?.cancel();
+    _firestoreSub?.cancel();
+    _remoteReportsController.close();
+  }
+
+  void _listenToRemoteChanges() {
+    _firestoreSub = _firestore
+        .collection('reports')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+      final remote = snapshot.docs.map((doc) {
+        final data = Map<String, dynamic>.from(doc.data());
+        if (data['imageUrls'] is List) {
+          data['imagePaths'] = data['imageUrls'];
+        }
+        return Report.fromJson(data);
+      }).toList();
+      _remoteReportsController.add(remote);
+    });
   }
 
   bool get isSyncing => _isSyncing;
@@ -40,8 +64,7 @@ class SyncService {
     onSyncChanged?.call();
 
     try {
-      await _uploadLocalReports();
-      await _downloadRemoteReports();
+      await Future.delayed(Duration.zero);
     } finally {
       _isSyncing = false;
       onSyncChanged?.call();
@@ -70,28 +93,9 @@ class SyncService {
     } catch (_) {}
   }
 
-  Future<void> _uploadLocalReports() async {
-    await Future.delayed(Duration.zero);
-  }
-
-  Future<void> _downloadRemoteReports() async {}
-
-  Future<List<Report>> fetchRemoteReports() async {
-    try {
-      final snapshot = await _firestore
-          .collection('reports')
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        if (data['imageUrls'] is List) {
-          data['imagePaths'] = data['imageUrls'];
-        }
-        return Report.fromJson(data);
-      }).toList();
-    } catch (_) {
-      return [];
+  Future<void> uploadUnsyncedReports(List<Report> unsynced) async {
+    for (final report in unsynced) {
+      await uploadReport(report);
     }
   }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
@@ -15,9 +16,33 @@ final syncStatusProvider = StateProvider<bool>((ref) => false);
 
 class ReportsNotifier extends StateNotifier<AsyncValue<List<Report>>> {
   final Ref _ref;
+  StreamSubscription<List<Report>>? _remoteSub;
 
   ReportsNotifier(this._ref) : super(const AsyncValue.loading()) {
-    _load();
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _load();
+    _remoteSub = SyncService.instance.remoteReportsStream.listen(_mergeRemoteReports);
+    SyncService.instance.onSyncChanged = () {
+      _ref.read(syncStatusProvider.notifier).state = SyncService.instance.isSyncing;
+    };
+  }
+
+  @override
+  void dispose() {
+    _remoteSub?.cancel();
+    SyncService.instance.onSyncChanged = null;
+    super.dispose();
+  }
+
+  Future<void> _mergeRemoteReports(List<Report> remote) async {
+    final storage = await _ref.read(storageServiceProvider.future);
+    for (final remoteReport in remote) {
+      await storage.saveReport(remoteReport);
+    }
+    await _load();
   }
 
   Future<void> _load() async {
@@ -36,18 +61,10 @@ class ReportsNotifier extends StateNotifier<AsyncValue<List<Report>>> {
     final sync = SyncService.instance;
     _ref.read(syncStatusProvider.notifier).state = true;
     try {
+      final local = state.valueOrNull ?? [];
+      final unsynced = local.where((r) => !r.synced).toList();
+      await sync.uploadUnsyncedReports(unsynced);
       await sync.syncAll();
-      final remote = await sync.fetchRemoteReports();
-      final storage = await _ref.read(storageServiceProvider.future);
-      final local = await storage.loadReports();
-
-      final localIds = local.map((r) => r.id).toSet();
-      for (final r in remote) {
-        if (!localIds.contains(r.id)) {
-          await storage.saveReport(r);
-        }
-      }
-      await _load();
     } finally {
       _ref.read(syncStatusProvider.notifier).state = false;
     }
@@ -113,6 +130,7 @@ class ReportsNotifier extends StateNotifier<AsyncValue<List<Report>>> {
     if (current == null) return;
 
     final updated = current.copyWith(
+      incidentType: formData['incidentType'] as String?,
       startTime: formData['startTime'] as String?,
       onSceneTime: formData['onSceneTime'] as String?,
       endTime: formData['endTime'] as String?,
