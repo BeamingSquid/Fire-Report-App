@@ -3,6 +3,7 @@ name: Build Windows App
 on:
   workflow_dispatch:
   push:
+    branches: [ master ]
     tags:
       - 'v*'
 
