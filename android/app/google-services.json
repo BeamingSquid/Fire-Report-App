@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "521316288334",
+    "project_id": "fire-incident-report-maker",
+    "storage_bucket": "fire-incident-report-maker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:521316288334:android:491fde7a71159a6e3bc01f",
+        "android_client_info": {
+          "package_name": "com.incidentreport.fire_report_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIyFR-kC0cDp-ENrIob_0A74r2OKGmV1E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

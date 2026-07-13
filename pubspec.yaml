@@ -1,0 +1,44 @@
+name: incident_report_app
+description: "Fire Incident Reporting App"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  path_provider: ^2.1.5
+  path: ^1.9.1
+  uuid: ^4.5.1
+  intl: ^0.20.2
+  pdf: ^3.11.2
+  printing: ^5.14.2
+  image_picker: ^1.1.2
+  share_plus: ^10.1.4
+  firebase_core: ^3.12.1
+  cloud_firestore: ^5.6.5
+  firebase_storage: ^12.4.4
+  firebase_auth: ^5.5.1
+  connectivity_plus: ^6.1.4
+  open_filex: ^4.7.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  image_path: "Fire Report App Icon.png"
+  adaptive_icon_background: '#1a237e'
+  adaptive_icon_foreground: "Fire Report App Icon.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/template.png
