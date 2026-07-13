@@ -3,12 +3,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/report.dart';
 import '../models/settings.dart';
 import '../providers/report_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/incident_type_picker.dart';
 import '../widgets/triage_table.dart';
+import '../services/pdf_service.dart';
+
+class _TimeFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue old, TextEditingValue incoming) {
+    final digits = incoming.text.replaceAll(RegExp(r'[^\d]'), '');
+    if (digits.isEmpty) return TextEditingValue.empty;
+    final sb = StringBuffer();
+    for (var i = 0; i < digits.length && i < 4; i++) {
+      if (i == 2 && digits.length > 2) sb.write(':');
+      sb.write(digits[i]);
+    }
+    final formatted = sb.toString();
+    final cursor = formatted.length;
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: cursor),
+    );
+  }
+}
 
 class ReportFormScreen extends ConsumerStatefulWidget {
   final Report? existingReport;
@@ -29,18 +50,23 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
   late TextEditingController _startKmCtl;
   late TextEditingController _endKmCtl;
   late TextEditingController _addressCtl;
-  late TextEditingController _addRespondersCtl;
-  late TextEditingController _victimCountCtl;
+  late TextEditingController _injuryCountCtl;
   late TextEditingController _descriptionCtl;
 
+  final _additionalResponders = <String>[];
   String _incidentType = '';
-  bool _hasVictims = false;
+  bool _hasInjuries = false;
   int _triageP1 = 0;
   int _triageP2 = 0;
   int _triageP3 = 0;
   int _triageP4 = 0;
   List<String> _imagePaths = [];
   bool _saving = false;
+
+  static const _responderOptions = [
+    'NHW', 'SAPS', 'Matjhabeng Fire', 'HazQuip', 'EMS', '1Life911',
+    'ER24', 'Netcare', 'KAD', 'SOG', 'Shepherd', 'ADT', 'LG', 'MJS', 'Defensor',
+  ];
 
   @override
   void initState() {
@@ -52,16 +78,29 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
     _startKmCtl = TextEditingController(text: r?.startKm ?? '');
     _endKmCtl = TextEditingController(text: r?.endKm ?? '');
     _addressCtl = TextEditingController(text: r?.address ?? '');
-    _addRespondersCtl = TextEditingController(text: r?.additionalResponders ?? '');
-    _victimCountCtl = TextEditingController(text: r?.victimCount ?? '');
+    _injuryCountCtl = TextEditingController(text: r?.victimCount ?? '');
     _descriptionCtl = TextEditingController(text: r?.description ?? '');
     _incidentType = r?.incidentType ?? '';
-    _hasVictims = r?.hasVictims ?? false;
+    _hasInjuries = r?.hasVictims ?? false;
     _triageP1 = r?.triageP1 ?? 0;
     _triageP2 = r?.triageP2 ?? 0;
     _triageP3 = r?.triageP3 ?? 0;
     _triageP4 = r?.triageP4 ?? 0;
     _imagePaths = r?.imagePaths ?? [];
+
+    if (r?.additionalResponders != null && r!.additionalResponders.isNotEmpty) {
+      for (final opt in _responderOptions) {
+        if (r.additionalResponders.contains(opt)) {
+          _additionalResponders.add(opt);
+        }
+      }
+      if (r.additionalResponders.split(',').any((s) => !_responderOptions.contains(s.trim()))) {
+        final extra = r.additionalResponders.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty && !_responderOptions.contains(e)).join(', ');
+        if (extra.isNotEmpty && !_additionalResponders.contains('Other: $extra')) {
+          _additionalResponders.add('Other: $extra');
+        }
+      }
+    }
   }
 
   @override
@@ -72,8 +111,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
     _startKmCtl.dispose();
     _endKmCtl.dispose();
     _addressCtl.dispose();
-    _addRespondersCtl.dispose();
-    _victimCountCtl.dispose();
+    _injuryCountCtl.dispose();
     _descriptionCtl.dispose();
     super.dispose();
   }
@@ -100,6 +138,10 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
       final settings = ref.read(settingsProvider).valueOrNull ?? const AppSettings();
       final notifier = ref.read(reportsProvider.notifier);
 
+      final respondersStr = _additionalResponders
+          .map((r) => r.startsWith('Other:') ? r.substring(6) : r)
+          .join(', ');
+
       final formData = {
         'incidentType': _incidentType,
         'startTime': _startTimeCtl.text,
@@ -108,9 +150,9 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
         'startKm': _startKmCtl.text,
         'endKm': _endKmCtl.text,
         'address': _addressCtl.text,
-        'additionalResponders': _addRespondersCtl.text,
-        'hasVictims': _hasVictims,
-        'victimCount': _victimCountCtl.text,
+        'additionalResponders': respondersStr,
+        'hasVictims': _hasInjuries,
+        'victimCount': _injuryCountCtl.text,
         'triageP1': _triageP1,
         'triageP2': _triageP2,
         'triageP3': _triageP3,
@@ -119,18 +161,52 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
         'imagePaths': _imagePaths,
       };
 
+      Report report;
       if (widget.existingReport != null) {
         await notifier.updateReport(widget.existingReport!.id, formData);
+        report = widget.existingReport!.copyWith(
+          incidentType: _incidentType,
+          startTime: _startTimeCtl.text,
+          onSceneTime: _onSceneTimeCtl.text,
+          endTime: _endTimeCtl.text,
+          startKm: _startKmCtl.text,
+          endKm: _endKmCtl.text,
+          address: _addressCtl.text,
+          additionalResponders: respondersStr,
+          hasVictims: _hasInjuries,
+          victimCount: _injuryCountCtl.text,
+          triageP1: _triageP1,
+          triageP2: _triageP2,
+          triageP3: _triageP3,
+          triageP4: _triageP4,
+          description: _descriptionCtl.text,
+          imagePaths: _imagePaths,
+        );
       } else {
-        await notifier.createReport(formData, settings);
+        report = await notifier.createReport(formData, settings);
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Report saved')),
+      if (!mounted) return;
+
+      try {
+        final templateData = await rootBundle.load('assets/template.png');
+        final pdfService = PdfService();
+        final pdfBytes = await pdfService.generatePdf(
+          report,
+          templateImage: templateData.buffer.asUint8List(),
         );
-        Navigator.of(context).pop();
-      }
+        final pdfPath = await pdfService.savePdf(pdfBytes, report.incidentId);
+        await Share.shareXFiles(
+          [XFile(pdfPath, mimeType: 'application/pdf')],
+          text: 'Incident Report ${report.incidentId}',
+        );
+      } catch (_) {}
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Report saved')),
+      );
+      Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -153,7 +229,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
           TextButton.icon(
             onPressed: _saving ? null : _save,
             icon: _saving
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.save),
             label: const Text('Save'),
           ),
@@ -180,7 +256,8 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
             _sectionHeader('Emergency Details'),
             _textField('Address of Emergency', _addressCtl, maxLines: 2),
             const SizedBox(height: 8),
-            _textField('Additional Responders', _addRespondersCtl),
+            _sectionHeader('Additional Responders'),
+            _respondersPicker(),
             const SizedBox(height: 16),
             _sectionHeader('Incident Type'),
             IncidentTypePicker(
@@ -189,16 +266,16 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
             ),
             if (_incidentType.isNotEmpty) ...[
               const SizedBox(height: 16),
-              _sectionHeader('Victims'),
+              _sectionHeader('Injuries'),
               SwitchListTile(
-                title: const Text('Victims Present'),
-                value: _hasVictims,
-                onChanged: (v) => setState(() => _hasVictims = v),
+                title: const Text('Injuries Present'),
+                value: _hasInjuries,
+                onChanged: (v) => setState(() => _hasInjuries = v),
               ),
-              if (_hasVictims) ...[
-                _textField('Number of Victims', _victimCountCtl, narrow: true),
+              if (_hasInjuries) ...[
+                _textField('Number of Injuries', _injuryCountCtl, narrow: true),
                 const SizedBox(height: 8),
-                const Text('Triage', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text('Triage', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                 const SizedBox(height: 4),
                 TriageTable(
                   p1: _triageP1,
@@ -231,8 +308,8 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
                           width: 100, height: 100,
-                          color: Colors.grey.shade200,
-                          child: const Icon(Icons.broken_image),
+                          color: Colors.grey.shade800,
+                          child: const Icon(Icons.broken_image, color: Colors.white54),
                         ),
                       ),
                     ),
@@ -264,12 +341,55 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
     );
   }
 
+  Widget _respondersPicker() {
+    final other = _additionalResponders.firstWhere(
+      (r) => r.startsWith('Other:'),
+      orElse: () => '',
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: _responderOptions.map((opt) {
+            final selected = _additionalResponders.contains(opt);
+            return FilterChip(
+              label: Text(opt, style: const TextStyle(fontSize: 13)),
+              selected: selected,
+              onSelected: (v) {
+                setState(() {
+                  if (v) {
+                    _additionalResponders.add(opt);
+                  } else {
+                    _additionalResponders.remove(opt);
+                  }
+                });
+              },
+              selectedColor: const Color(0xFF1a237e),
+              checkmarkColor: Colors.white,
+              labelStyle: TextStyle(color: selected ? Colors.white : Colors.white70),
+              side: BorderSide(color: selected ? const Color(0xFF1a237e) : Colors.white24),
+            );
+          }).toList(),
+        ),
+        if (other.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Chip(
+              label: Text(other.substring(6), style: const TextStyle(fontSize: 13)),
+              onDeleted: () => setState(() => _additionalResponders.remove(other)),
+              backgroundColor: const Color(0xFF1a237e),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _sectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.bold,
-      )),
+      child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
     );
   }
 
@@ -285,19 +405,20 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
   }
 
   Widget _timeField(String label, TextEditingController ctl) {
-    return TextFormField(
-      controller: ctl,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: 'HH:MM',
-        border: const OutlineInputBorder(),
-        isDense: true,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: TextFormField(
+        controller: ctl,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: 'HH:MM',
+          border: const OutlineInputBorder(),
+          isDense: true,
+        ),
+        inputFormatters: [_TimeFormatter()],
+        keyboardType: TextInputType.datetime,
+        style: const TextStyle(fontSize: 15),
       ),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[\d:]')),
-        LengthLimitingTextInputFormatter(5),
-      ],
-      keyboardType: TextInputType.datetime,
     );
   }
 
@@ -313,6 +434,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
         ),
         maxLines: maxLines,
         keyboardType: narrow ? TextInputType.number : TextInputType.text,
+        style: const TextStyle(fontSize: 15),
       ),
     );
   }

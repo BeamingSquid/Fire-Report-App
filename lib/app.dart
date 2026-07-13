@@ -24,20 +24,59 @@ class _IncidentReportAppState extends State<IncidentReportApp> {
 
   @override
   Widget build(BuildContext context) {
+    const accentColor = Color(0xFF1a237e);
     return MaterialApp(
-      title: 'Incident Report',
+      title: 'Fire Report App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorSchemeSeed: Colors.blueGrey,
-        useMaterial3: true,
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        colorSchemeSeed: Colors.blueGrey,
+        colorSchemeSeed: accentColor,
         useMaterial3: true,
         brightness: Brightness.dark,
+        scaffoldBackgroundColor: Colors.black,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1a237e),
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: accentColor, width: 2)),
+          labelStyle: const TextStyle(color: Colors.white70),
+          filled: true,
+          fillColor: const Color(0xFF1a1a2e),
+        ),
+        cardTheme: const CardThemeData(
+          color: Color(0xFF1a1a2e),
+          surfaceTintColor: Color(0xFF1a1a2e),
+        ),
+        dividerColor: Colors.white24,
       ),
-      themeMode: ThemeMode.system,
+      darkTheme: ThemeData(
+        colorSchemeSeed: accentColor,
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: Colors.black,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1a237e),
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: accentColor, width: 2)),
+          labelStyle: const TextStyle(color: Colors.white70),
+          filled: true,
+          fillColor: const Color(0xFF1a1a2e),
+        ),
+        cardTheme: const CardThemeData(
+          color: Color(0xFF1a1a2e),
+          surfaceTintColor: Color(0xFF1a1a2e),
+        ),
+        dividerColor: Colors.white24,
+      ),
+      themeMode: ThemeMode.dark,
       home: const ReportListScreen(),
     );
   }

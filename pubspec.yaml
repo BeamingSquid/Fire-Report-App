@@ -24,8 +24,6 @@ dependencies:
   firebase_storage: ^12.4.4
   firebase_auth: ^5.5.1
   connectivity_plus: ^6.1.4
-  open_filex: ^4.7.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

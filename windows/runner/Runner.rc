@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.incidentreport" "\0"
-            VALUE "FileDescription", "fire_report_app" "\0"
+            VALUE "CompanyName", "Fire Report App" "\0"
+            VALUE "FileDescription", "Fire Report App" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "fire_report_app" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.incidentreport. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Fire Report App. All rights reserved." "\0"
             VALUE "OriginalFilename", "fire_report_app.exe" "\0"
-            VALUE "ProductName", "fire_report_app" "\0"
+            VALUE "ProductName", "Fire Report App" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

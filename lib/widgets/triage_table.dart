@@ -29,30 +29,32 @@ class TriageTable extends StatelessWidget {
         0: FlexColumnWidth(2),
         1: FlexColumnWidth(1),
       },
-      border: TableBorder.all(color: Colors.grey.shade300),
+      border: TableBorder.all(color: Colors.white24),
       children: [
-        _row(context, 'P1 - Red', p1, onP1Changed, Colors.red.shade100),
-        _row(context, 'P2 - Yellow', p2, onP2Changed, Colors.yellow.shade100),
-        _row(context, 'P3 - Green', p3, onP3Changed, Colors.green.shade100),
-        _row(context, 'P4 - Blue', p4, onP4Changed, Colors.blue.shade100),
+        _row('P1 - Red', p1, onP1Changed, const Color(0xFFFF0000)),
+        _row('P2 - Yellow', p2, onP2Changed, const Color(0xFFFFFF00)),
+        _row('P3 - Green', p3, onP3Changed, const Color(0xFF00FF00)),
+        _row('P4 - Blue', p4, onP4Changed, const Color(0xFF0000FF)),
       ],
     );
   }
 
-  TableRow _row(BuildContext context, String label, int value, ValueChanged<int> onChanged, Color bg) {
+  TableRow _row(String label, int value, ValueChanged<int> onChanged, Color bg) {
     return TableRow(
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           color: bg,
-          child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black)),
         ),
-        Padding(
+        Container(
+          color: bg,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: TextFormField(
             initialValue: value > 0 ? value.toString() : '',
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
               isDense: true,

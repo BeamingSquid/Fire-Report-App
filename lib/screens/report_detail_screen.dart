@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/report.dart';
 import '../providers/report_provider.dart';
@@ -78,8 +77,8 @@ class ReportDetailScreen extends ConsumerWidget {
             _row('Additional Responders', report.additionalResponders),
           ]),
           const SizedBox(height: 12),
-          _section('Victims', [
-            _row('Victims', report.hasVictims ? 'Yes' : 'No'),
+          _section('Injuries', [
+            _row('Injuries', report.hasVictims ? 'Yes' : 'No'),
             if (report.hasVictims) ...[
               _row('Count', report.victimCount),
               _row('P1 Red', '${report.triageP1}'),
@@ -114,8 +113,8 @@ class ReportDetailScreen extends ConsumerWidget {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(
                             width: 120, height: 120,
-                            color: Colors.grey.shade200,
-                            child: const Icon(Icons.broken_image),
+                            color: Colors.grey.shade800,
+                            child: const Icon(Icons.broken_image, color: Colors.white54),
                           ),
                         ),
                       ),
@@ -138,7 +137,7 @@ class ReportDetailScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const Divider(),
+            const Divider(color: Colors.white24),
             ...children,
           ],
         ),
@@ -154,7 +153,7 @@ class ReportDetailScreen extends ConsumerWidget {
         children: [
           SizedBox(
             width: 140,
-            child: Text(label, style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+            child: Text(label, style: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w500)),
           ),
           Expanded(child: Text(value.isEmpty ? '\u2014' : value)),
         ],
@@ -174,54 +173,9 @@ class ReportDetailScreen extends ConsumerWidget {
 
       if (!context.mounted) return;
 
-      showModalBottomSheet(
-        context: context,
-        builder: (ctx) => SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.open_in_new),
-                title: const Text('Open PDF'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  OpenFilex.open(pdfPath);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.share),
-                title: const Text('Share'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Share.shareXFiles([XFile(pdfPath)]);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.download),
-                title: const Text('Save to Downloads'),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  final dir = Directory('/storage/emulated/0/Download/FireReports');
-                  await dir.create(recursive: true);
-                  final name = '${report.incidentId.replaceAll('/', '_')}.pdf';
-                  final copy = File('${dir.path}/$name');
-                  await File(pdfPath).copy(copy.path);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Saved to Download/FireReports/$name'),
-                        action: SnackBarAction(
-                          label: 'Open',
-                          onPressed: () => OpenFilex.open(copy.path),
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
+      await Share.shareXFiles(
+        [XFile(pdfPath, mimeType: 'application/pdf')],
+        text: 'Incident Report ${report.incidentId}',
       );
     } catch (e) {
       if (context.mounted) {

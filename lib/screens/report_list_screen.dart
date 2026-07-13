@@ -24,8 +24,15 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Incident Reports'),
+        title: const Text('Fire Reports'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sync),
+            tooltip: 'Push Update',
+            onPressed: isSyncing
+                ? null
+                : () => ref.read(reportsProvider.notifier).syncWithCloud(),
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () => Navigator.of(context).push(
@@ -48,7 +55,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                   child: SizedBox(
                     width: 14,
                     height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   ),
                 ),
             ],
@@ -66,7 +73,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 isDense: true,
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                fillColor: const Color(0xFF1a1a2e),
               ),
               onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
             ),
@@ -87,12 +94,14 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.inbox, size: 64, color: Colors.grey.shade400),
+                        Icon(Icons.inbox, size: 64, color: Colors.grey.shade600),
                         const SizedBox(height: 12),
-                        Text(reports.isEmpty
-                            ? 'No reports yet. Tap + to create one.'
-                            : 'No matching reports',
-                            style: TextStyle(color: Colors.grey.shade600)),
+                        Text(
+                          reports.isEmpty
+                              ? 'No reports yet. Tap + to create one.'
+                              : 'No matching reports',
+                          style: TextStyle(color: Colors.grey.shade400),
+                        ),
                       ],
                     ),
                   );
@@ -149,14 +158,14 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                     ),
                     const SizedBox(height: 2),
                     if (report.incidentType.isNotEmpty)
-                      Text(report.incidentType, style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+                      Text(report.incidentType, style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
                     if (report.address.isNotEmpty)
                       Text(report.address, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                    Text(dateFmt.format(report.createdAt), style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
+                    Text(dateFmt.format(report.createdAt), style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.grey.shade400),
+              Icon(Icons.chevron_right, color: Colors.grey.shade600),
             ],
           ),
         ),

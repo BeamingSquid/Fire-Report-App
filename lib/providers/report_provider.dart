@@ -61,8 +61,10 @@ class ReportsNotifier extends StateNotifier<AsyncValue<List<Report>>> {
     final incidentTypePath = formData['incidentType'] as String? ?? '';
     final prefix = incidentTypePath.isEmpty ? 'GEN' : IncidentTypeNode.getPrefix(incidentTypePath);
 
-    final counter = (state.valueOrNull?.length ?? 0) + 1;
-    final incidentId = '$prefix/${DateFormat('ddMMyyyy').format(now)}/${counter.toString().padLeft(4, '0')}';
+    final todayStr = DateFormat('ddMMyyyy').format(now);
+    final todayCount = state.valueOrNull?.where((r) => r.incidentId.contains(todayStr)).length ?? 0;
+    final counter = todayCount + 1;
+    final incidentId = '$prefix/$todayStr/${counter.toString().padLeft(4, '0')}';
 
     final report = Report(
       id: uuid,

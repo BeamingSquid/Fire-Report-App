@@ -11,36 +11,92 @@ class IncidentTypeNode {
   static const List<IncidentTypeNode> allTypes = [
     IncidentTypeNode('Fire', [
       IncidentTypeNode('Working Fire', [
-        IncidentTypeNode('Structure - House'),
-        IncidentTypeNode('Structure - Commercial'),
-        IncidentTypeNode('Structure - Industrial'),
-        IncidentTypeNode('Structure - Vacant'),
+        IncidentTypeNode('Residential'),
+        IncidentTypeNode('Commercial'),
+        IncidentTypeNode('Industrial'),
+        IncidentTypeNode('Vacant'),
       ]),
+      IncidentTypeNode('Automotive', [
+        IncidentTypeNode('Private'),
+        IncidentTypeNode('Commercial'),
+        IncidentTypeNode('Rail'),
+        IncidentTypeNode('Recreation'),
+      ]),
+      IncidentTypeNode('Brush/Field'),
       IncidentTypeNode('Smoke Showing'),
-      IncidentTypeNode('Brush Fire'),
+      IncidentTypeNode('Other'),
     ]),
-    IncidentTypeNode('Traffic Accident', [
-      IncidentTypeNode('Motor Vehicle Accident', [
+    IncidentTypeNode('Traffic Accidents', [
+      IncidentTypeNode('Motor Vehicle', [
         IncidentTypeNode('Major'),
         IncidentTypeNode('Minor'),
-        IncidentTypeNode('Major With Roadway Shutdown'),
-        IncidentTypeNode('Minor With Roadway Shutdown'),
-        IncidentTypeNode('Extrication'),
+        IncidentTypeNode('Major w/ Road Closure'),
+        IncidentTypeNode('Minor w/ Road Closure'),
         IncidentTypeNode('Fatal'),
       ]),
-      IncidentTypeNode('Pedestrian Vehicle Accident'),
-      IncidentTypeNode('Multi Vehicle Accident', [
+      IncidentTypeNode('Pedestrian Vehicle', [
         IncidentTypeNode('Major'),
         IncidentTypeNode('Minor'),
-        IncidentTypeNode('Major With Roadway Shutdown'),
-        IncidentTypeNode('Minor With Roadway Shutdown'),
-        IncidentTypeNode('Extrication'),
+        IncidentTypeNode('Major w/ Road Closure'),
+        IncidentTypeNode('Minor w/ Road Closure'),
+        IncidentTypeNode('Fatal'),
       ]),
+      IncidentTypeNode('Motorcycle', [
+        IncidentTypeNode('Major'),
+        IncidentTypeNode('Minor'),
+        IncidentTypeNode('Major w/ Road Closure'),
+        IncidentTypeNode('Minor w/ Road Closure'),
+        IncidentTypeNode('Fatal'),
+      ]),
+      IncidentTypeNode('Multi Vehicle', [
+        IncidentTypeNode('Major'),
+        IncidentTypeNode('Minor'),
+        IncidentTypeNode('Major w/ Road Closure'),
+        IncidentTypeNode('Minor w/ Road Closure'),
+        IncidentTypeNode('Fatal'),
+      ]),
+      IncidentTypeNode('Other'),
     ]),
-    IncidentTypeNode('Rescue - Technical'),
-    IncidentTypeNode('HazMat'),
-    IncidentTypeNode('Medical'),
-    IncidentTypeNode('Natural Disaster'),
+    IncidentTypeNode('Medical', [
+      IncidentTypeNode('Injury'),
+      IncidentTypeNode('Resuscitation'),
+      IncidentTypeNode('Assault'),
+      IncidentTypeNode('Child Birth'),
+      IncidentTypeNode('Mental Health', [
+        IncidentTypeNode('Self Harm'),
+        IncidentTypeNode('Suicide', [
+          IncidentTypeNode('Attempt'),
+          IncidentTypeNode('Threat'),
+        ]),
+      ]),
+      IncidentTypeNode('Myocardial Infarction'),
+      IncidentTypeNode('Transient Ischemic Attack'),
+      IncidentTypeNode('Epilepsy'),
+      IncidentTypeNode('Anaphylactic Shock'),
+    ]),
+    IncidentTypeNode('Rescue', [
+      IncidentTypeNode('Technical'),
+      IncidentTypeNode('Water'),
+      IncidentTypeNode('Trench'),
+    ]),
+    IncidentTypeNode('HazMat', [
+      IncidentTypeNode('Chemical'),
+      IncidentTypeNode('Biological'),
+      IncidentTypeNode('Radiological'),
+      IncidentTypeNode('Nuclear'),
+      IncidentTypeNode('Explosive'),
+    ]),
+    IncidentTypeNode('Disaster', [
+      IncidentTypeNode('Natural'),
+      IncidentTypeNode('Terrorism'),
+      IncidentTypeNode('Accidental'),
+      IncidentTypeNode('Collapse'),
+    ]),
+    IncidentTypeNode('Aviation'),
+    IncidentTypeNode('Death', [
+      IncidentTypeNode('Homicide'),
+      IncidentTypeNode('Suicide'),
+    ]),
   ];
 
   static String? buildFullPath(IncidentTypeNode leaf) {
@@ -92,11 +148,13 @@ class IncidentTypeNode {
 
   static String getPrefix(String fullPath) {
     if (fullPath.startsWith('Fire')) return 'FIRE';
-    if (fullPath.startsWith('Traffic Accident')) return 'ACC';
+    if (fullPath.startsWith('Traffic Accidents')) return 'ACCI';
+    if (fullPath.startsWith('Medical')) return 'MEDI';
     if (fullPath.startsWith('Rescue')) return 'RESQ';
-    if (fullPath.startsWith('HazMat')) return 'HAZ';
-    if (fullPath.startsWith('Medical')) return 'MED';
-    if (fullPath.startsWith('Natural Disaster')) return 'DIS';
+    if (fullPath.startsWith('HazMat')) return 'HZMT';
+    if (fullPath.startsWith('Disaster')) return 'DIST';
+    if (fullPath.startsWith('Aviation')) return 'ACC';
+    if (fullPath.startsWith('Death')) return 'DEATH';
     return 'GEN';
   }
 }
