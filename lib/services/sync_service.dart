@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -44,16 +45,19 @@ class SyncService {
         .collection('reports')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .listen((snapshot) {
-      final remote = snapshot.docs.map((doc) {
-        final data = Map<String, dynamic>.from(doc.data());
-        if (data['imageUrls'] is List) {
-          data['imagePaths'] = data['imageUrls'];
-        }
-        return Report.fromJson(data);
-      }).toList();
-      _remoteReportsController.add(remote);
-    });
+        .listen(
+      (snapshot) {
+        final remote = snapshot.docs.map((doc) {
+          final data = Map<String, dynamic>.from(doc.data());
+          if (data['imageUrls'] is List) {
+            data['imagePaths'] = data['imageUrls'];
+          }
+          return Report.fromJson(data);
+        }).toList();
+        _remoteReportsController.add(remote);
+      },
+      onError: (e) => debugPrint('Firestore snapshot error: $e'),
+    );
   }
 
   bool get isSyncing => _isSyncing;
@@ -90,7 +94,9 @@ class SyncService {
         'synced': true,
         'syncTimestamp': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('uploadReport error: $e');
+    }
   }
 
   Future<void> uploadUnsyncedReports(List<Report> unsynced) async {
@@ -107,6 +113,8 @@ class SyncService {
           await item.delete();
         }
       });
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('deleteRemoteReport error: $e');
+    }
   }
 }
